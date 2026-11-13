@@ -1,0 +1,20 @@
+# Dependency
+node_modules/
+
+# Rahasia (API key, kode akses)
+.env
+.env.*
+!.env.example
+
+# Hasil build
+dist/
+
+# Log
+*.log
+npm-debug.log*
+
+# Sistem & editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
