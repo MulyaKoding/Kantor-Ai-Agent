@@ -71,7 +71,7 @@ export function createCharacter(agent, divisionColor, index = 0) {
   const hairColor = look.hair || '#1c1c1c';
   const leader = agent.leader;
 
-  const shirt = leader ? '#2d3748' : shade(divisionColor, [-0.06, 0.0, 0.08, -0.12][index % 4]);
+  const shirt = leader ? '#1e2d4a' : shade(divisionColor, [-0.06, 0.0, 0.08, -0.12][index % 4]);
   const pants = PANTS[(agent.name.length + index) % PANTS.length];
 
   const root = new THREE.Group();

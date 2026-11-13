@@ -21,15 +21,21 @@ function makeSign(text, color) {
   canvas.width = 1024;
   canvas.height = 192;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = color;
+  // background gelap dengan warna aksen tipis
+  ctx.fillStyle = '#111827';
   ctx.fillRect(0, 0, 1024, 192);
-  ctx.fillStyle = 'rgba(255,255,255,0.18)';
-  ctx.fillRect(0, 150, 1024, 42);
+  // garis accent di bawah
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 162, 1024, 30);
+  // subtle overlay
+  ctx.fillStyle = 'rgba(255,255,255,0.04)';
+  ctx.fillRect(0, 0, 1024, 162);
+  // teks
   ctx.fillStyle = '#ffffff';
-  ctx.font = '800 92px system-ui, -apple-system, "Segoe UI", sans-serif';
+  ctx.font = '800 88px system-ui, -apple-system, "Segoe UI", sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text.toUpperCase(), 512, 88);
+  ctx.fillText(text.toUpperCase(), 512, 80);
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 4;
@@ -44,9 +50,9 @@ function place(parent, obj, x, y, z, ry = 0) {
 }
 
 function buildShell(inner, color, title) {
-  const wall = tint(color, 0.36);
-  const trim = tint(color, -0.08);
-  const floor = tint(color, 0.42);
+  const wall = tint(color, 0.18);
+  const trim = tint(color, -0.12);
+  const floor = tint(color, 0.26);
 
   inner.add(box(ROOM_W, 0.2, ROOM_D, floor, 0, -FLOOR_TOP, 0));
 
@@ -63,7 +69,7 @@ function buildShell(inner, color, title) {
   inner.add(box(seg, 0.5, 0.2, wall, -(1 + seg / 2), 0.25, ROOM_D / 2 + 0.1));
   inner.add(box(seg, 0.5, 0.2, wall, 1 + seg / 2, 0.25, ROOM_D / 2 + 0.1));
   inner.add(box(0.2, 0.5, ROOM_D + 0.2, wall, ROOM_W / 2 + 0.1, 0.25, 0.1));
-  inner.add(box(2.0, 0.04, 0.9, '#3b4252', 0, 0.02, ROOM_D / 2 + 0.1));
+  inner.add(box(2.0, 0.04, 0.9, '#1a2035', 0, 0.02, ROOM_D / 2 + 0.1));
 
   // papan nama divisi
   inner.add(box(4.8, 1.0, 0.08, trim, 0, 3.0, -ROOM_D / 2 + 0.04));
@@ -206,17 +212,17 @@ export function buildOffice(scene) {
   // lantai koridor / dasar
   const baseW = PITCH_X * 2 + ROOM_W + 5;
   const baseD = PITCH_Z * 2 + ROOM_D + 5;
-  const base = box(baseW, 0.4, baseD, '#d3dbe6', 0, -0.3, 0);
+  const base = box(baseW, 0.4, baseD, '#1a2235', 0, -0.3, 0);
   base.castShadow = false;
   scene.add(base);
-  const edge = box(baseW + 1.2, 0.3, baseD + 1.2, '#aeb9c9', 0, -0.55, 0);
+  const edge = box(baseW + 1.2, 0.3, baseD + 1.2, '#111827', 0, -0.55, 0);
   edge.castShadow = false;
   scene.add(edge);
 
   // jalur koridor (garis halus)
   for (let c = 0; c < 2; c += 1) {
     const x = (c - 0.5) * PITCH_X;
-    const lane = box(0.12, 0.02, baseD - 2, '#c2ccda', x, -0.09, 0);
+    const lane = box(0.12, 0.02, baseD - 2, '#2a3550', x, -0.09, 0);
     lane.castShadow = false;
     scene.add(lane);
   }

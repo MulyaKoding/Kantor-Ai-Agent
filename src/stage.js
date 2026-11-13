@@ -14,15 +14,16 @@ export function createStage(canvas) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
   const small = Math.min(window.innerWidth, window.innerHeight) < 600;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setClearColor(0x0d1117, 1);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const scene = new THREE.Scene();
   const camera = new THREE.OrthographicCamera(-10, 10, 10, -10, -50, 400);
 
-  // ---------- cahaya ----------
-  scene.add(new THREE.HemisphereLight('#ffffff', '#b8c4d8', 1.55));
-  const sun = new THREE.DirectionalLight('#fff6e8', 2.1);
+  // ---------- cahaya (dark theme palette) ----------
+  scene.add(new THREE.HemisphereLight('#c8d8f8', '#1a2035', 1.4));
+  const sun = new THREE.DirectionalLight('#ddeeff', 1.8);
   sun.position.set(14, 46, 30);
   sun.castShadow = true;
   sun.shadow.mapSize.set(small ? 1024 : 2048, small ? 1024 : 2048);
