@@ -13,13 +13,17 @@ const group = (...kids) => {
   return g;
 };
 
-// Meja: atas di y=0.9. Orang duduk di sisi -z, layar laptop menghadap -z.
-export function desk(w = 2.2, d = 1.2, top = '#e9d8bd', accent = '#b99a6b') {
+// Meja modern: top tipis kayu terang, kaki hitam matte (A-frame), tanpa panel kayu tebal.
+export function desk(w = 2.2, d = 1.2, top = '#c9b89a', accent = '#2a2a2e') {
   const g = new THREE.Group();
-  g.add(box(w, 0.08, d, top, 0, 0.86, 0));
-  g.add(box(0.08, 0.82, d - 0.1, accent, -w / 2 + 0.06, 0.41, 0));
-  g.add(box(0.08, 0.82, d - 0.1, accent, w / 2 - 0.06, 0.41, 0));
-  g.add(box(w - 0.2, 0.5, 0.05, accent, 0, 0.55, d / 2 - 0.08));
+  g.add(box(w, 0.05, d, top, 0, 0.875, 0));
+  const leg = 0.05;
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      g.add(box(leg, 0.85, leg, accent, sx * (w / 2 - 0.07), 0.425, sz * (d / 2 - 0.07)));
+    }
+  }
+  g.add(box(w - 0.16, 0.04, 0.04, accent, 0, 0.56, d / 2 - 0.09));
   return g;
 }
 
@@ -42,20 +46,21 @@ export function mug(color = '#ffffff') {
   return group(box(0.1, 0.12, 0.1, color, 0, 0.96, 0));
 }
 
-export function chair(color = '#445066') {
+// Kursi modern: shell tempel + tiara logam + base pipih (task chair).
+export function chair(color = '#3a3f4a') {
   const g = new THREE.Group();
-  g.add(box(0.56, 0.1, 0.56, color, 0, 0.42, 0));
-  g.add(box(0.56, 0.62, 0.08, color, 0, 0.78, -0.27));
-  g.add(box(0.08, 0.3, 0.08, '#2a2f3a', 0, 0.22, 0));
-  g.add(box(0.7, 0.05, 0.12, '#2a2f3a', 0, 0.05, 0));
-  g.add(box(0.12, 0.05, 0.7, '#2a2f3a', 0, 0.05, 0));
+  const metal = '#16181c';
+  g.add(box(0.5, 0.09, 0.5, color, 0, 0.445, 0));        // seat
+  g.add(box(0.48, 0.45, 0.07, color, 0, 0.69, -0.235));  // backrest
+  g.add(box(0.1, 0.5, 0.1, metal, 0, 0.25, 0));          // column
+  g.add(box(0.58, 0.05, 0.58, metal, 0, 0.025, 0));      // base
   return g;
 }
 
 export function plant(h = 1) {
   const g = new THREE.Group();
-  g.add(box(0.4, 0.35, 0.4, '#c2724a', 0, 0.175, 0));
-  g.add(box(0.46, 0.06, 0.46, '#a85d3a', 0, 0.37, 0));
+  g.add(box(0.38, 0.34, 0.38, '#9a9590', 0, 0.17, 0));   // pot beton
+  g.add(box(0.42, 0.05, 0.42, '#8a8580', 0, 0.37, 0));
   g.add(box(0.1, 0.4 * h, 0.1, '#5a7d3a', 0, 0.6, 0));
   g.add(box(0.5, 0.3 * h, 0.5, '#3f9b52', 0, 0.85 * h, 0));
   g.add(box(0.34, 0.26 * h, 0.34, '#52b565', 0.08, 1.12 * h, -0.05));
@@ -63,23 +68,25 @@ export function plant(h = 1) {
 }
 
 const BOOK_COLORS = ['#e4572e', '#4f7cff', '#f5b82e', '#2fbf71', '#8a5cf6', '#ff5fa2', '#14b8a6'];
+// Rak buku terbuka modern: rangka putih tipis, rak kayu terang.
 export function bookshelf(w = 2.4, h = 2.2) {
   const g = new THREE.Group();
-  const depth = 0.45;
-  g.add(box(w, h, 0.05, '#b08d62', 0, h / 2, -depth / 2 + 0.03));
-  g.add(box(0.06, h, depth, '#b08d62', -w / 2, h / 2, 0));
-  g.add(box(0.06, h, depth, '#b08d62', w / 2, h / 2, 0));
+  const depth = 0.38;
+  const frame = '#e6e8ec';
+  g.add(box(w, h, 0.04, frame, 0, h / 2, -depth / 2 + 0.02));
+  g.add(box(0.05, h, depth, frame, -w / 2, h / 2, 0));
+  g.add(box(0.05, h, depth, frame, w / 2, h / 2, 0));
   const shelves = 4;
   for (let s = 0; s <= shelves; s += 1) {
     const y = (s * h) / shelves;
-    g.add(box(w, 0.05, depth, '#9a7a52', 0, y + 0.03, 0));
+    g.add(box(w, 0.04, depth, '#d8dce2', 0, y + 0.02, 0));
     if (s === shelves) continue;
-    let x = -w / 2 + 0.15;
+    let x = -w / 2 + 0.14;
     let i = s * 3;
     while (x < w / 2 - 0.2) {
-      const bw = 0.08 + ((i * 7) % 4) * 0.025;
-      const bh = 0.3 + ((i * 5) % 4) * 0.06;
-      g.add(box(bw, bh, 0.3, BOOK_COLORS[i % BOOK_COLORS.length], x + bw / 2, y + 0.06 + bh / 2, 0));
+      const bw = 0.07 + ((i * 7) % 4) * 0.02;
+      const bh = 0.28 + ((i * 5) % 4) * 0.05;
+      g.add(box(bw, bh, 0.28, BOOK_COLORS[i % BOOK_COLORS.length], x + bw / 2, y + 0.05 + bh / 2, 0));
       x += bw + 0.02;
       i += 1;
     }
@@ -125,23 +132,30 @@ export function rug(w, d, color) {
   return box(w, 0.03, d, color, 0, 0.1, 0, { transparent: false });
 }
 
-export function sofa(w = 2.6, color = '#6b7a99') {
+// Sofa modular modern: body abu-abu muda, cushion kuning mustard, kaki hitam.
+export function sofa(w = 2.6, color = '#8a93a3') {
   const g = new THREE.Group();
-  g.add(box(w, 0.4, 0.9, color, 0, 0.3, 0));
-  g.add(box(w, 0.6, 0.25, color, 0, 0.6, -0.33));
-  g.add(box(0.25, 0.55, 0.9, color, -w / 2 + 0.12, 0.45, 0));
-  g.add(box(0.25, 0.55, 0.9, color, w / 2 - 0.12, 0.45, 0));
-  g.add(box(0.5, 0.45, 0.14, '#f5b82e', 0.5, 0.65, -0.12));
+  g.add(box(w, 0.38, 0.85, color, 0, 0.29, 0));          // body
+  g.add(box(w, 0.16, 0.85, color, 0, 0.5, -0.32));        // back cushion
+  g.add(box(0.18, 0.4, 0.85, '#16181c', -w / 2 + 0.1, 0.2, 0));  // left arm
+  g.add(box(0.18, 0.4, 0.85, '#16181c', w / 2 - 0.1, 0.2, 0));   // right arm
+  for (let i = 0; i < 3; i += 1) {
+    const x = -w / 2 + 0.3 + i * (w / 3);
+    g.add(box(w / 3 - 0.06, 0.14, 0.8, '#f5b82e', x, 0.6, -0.12)); // seat cushions
+  }
   return g;
 }
 
-export function table(w = 1.6, d = 1.0, color = '#e9d8bd') {
+// Meja kopi modern: top kayu terang, kaki hitam tipis.
+export function table(w = 1.6, d = 1.0, color = '#c9b89a') {
   const g = new THREE.Group();
-  g.add(box(w, 0.08, d, color, 0, 0.62, 0));
-  g.add(box(0.1, 0.58, 0.1, '#8a6f48', -w / 2 + 0.12, 0.29, -d / 2 + 0.12));
-  g.add(box(0.1, 0.58, 0.1, '#8a6f48', w / 2 - 0.12, 0.29, -d / 2 + 0.12));
-  g.add(box(0.1, 0.58, 0.1, '#8a6f48', -w / 2 + 0.12, 0.29, d / 2 - 0.12));
-  g.add(box(0.1, 0.58, 0.1, '#8a6f48', w / 2 - 0.12, 0.29, d / 2 - 0.12));
+  g.add(box(w, 0.05, d, color, 0, 0.725, 0));
+  const leg = 0.05;
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      g.add(box(leg, 0.7, leg, '#16181c', sx * (w / 2 - 0.08), 0.35, sz * (d / 2 - 0.08)));
+    }
+  }
   return g;
 }
 

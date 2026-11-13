@@ -50,9 +50,10 @@ function place(parent, obj, x, y, z, ry = 0) {
 }
 
 function buildShell(inner, color, title) {
-  const wall = tint(color, 0.18);
-  const trim = tint(color, -0.12);
-  const floor = tint(color, 0.26);
+  // Dinding putih terang + trim krem — ruang terasa lebih modern & bersih.
+  const wall = '#eef1f5';
+  const trim = '#d6dae3';
+  const floor = '#d9c9b3';
 
   inner.add(box(ROOM_W, 0.2, ROOM_D, floor, 0, -FLOOR_TOP, 0));
 
@@ -71,9 +72,9 @@ function buildShell(inner, color, title) {
   inner.add(box(0.2, 0.5, ROOM_D + 0.2, wall, ROOM_W / 2 + 0.1, 0.25, 0.1));
   inner.add(box(2.0, 0.04, 0.9, '#1a2035', 0, 0.02, ROOM_D / 2 + 0.1));
 
-  // papan nama divisi
-  inner.add(box(4.8, 1.0, 0.08, trim, 0, 3.0, -ROOM_D / 2 + 0.04));
-  place(inner, makeSign(title, tint(color, -0.02)), 0, 3.0, -ROOM_D / 2 + 0.1);
+  // papan nama divisi (panel aksen warna divisi)
+  inner.add(box(4.8, 1.0, 0.08, color, 0, 3.0, -ROOM_D / 2 + 0.04));
+  place(inner, makeSign(title, '#ffffff'), 0, 3.0, -ROOM_D / 2 + 0.1);
 
   // jendela di dinding kiri
   place(inner, F.windowPane(1.6, 1.3), -ROOM_W / 2 + 0.03, 2.0, -1.4, Math.PI / 2);
@@ -107,7 +108,7 @@ function buildDivisionRoom(div, scene, chars) {
   room.add(inner);
 
   buildShell(inner, div.color, div.name);
-  { const rug = F.rug(5.2, 3.2, tint(div.color, 0.3)); rug.position.set(0, 0.0, 1.0); inner.add(rug); }
+  { const rug = F.rug(5.2, 3.2, tint(div.color, 0.5)); rug.position.set(0, 0.0, 1.0); inner.add(rug); }
 
   const members = agentsOf(div.id);
   const leader = members.find((m) => m.leader);
@@ -192,7 +193,7 @@ function buildLounge(scene) {
   room.add(inner);
   const color = '#e08e5a';
   buildShell(inner, color, 'Pantry');
-  { const rug = F.rug(5.5, 3.6, '#f1d4b8'); rug.position.set(0, 0, 0.5); inner.add(rug); }
+  { const rug = F.rug(5.5, 3.6, '#efe0cf'); rug.position.set(0, 0, 0.5); inner.add(rug); }
   place(inner, F.sofa(3.0, '#6b7a99'), 0, 0, -1.6);
   place(inner, F.table(1.5, 0.9, '#d9b98c'), 0, 0, 0.2);
   place(inner, F.mug('#ffffff'), -0.3, 0.0, 0.2);
@@ -209,20 +210,20 @@ export function buildOffice(scene) {
   const chars = [];
   const rooms = new Map();
 
-  // lantai koridor / dasar
+  // lantai koridor / dasar (modern: abu terang + trim kayu)
   const baseW = PITCH_X * 2 + ROOM_W + 5;
   const baseD = PITCH_Z * 2 + ROOM_D + 5;
-  const base = box(baseW, 0.4, baseD, '#1a2235', 0, -0.3, 0);
+  const base = box(baseW, 0.4, baseD, '#2b3340', 0, -0.3, 0);
   base.castShadow = false;
   scene.add(base);
-  const edge = box(baseW + 1.2, 0.3, baseD + 1.2, '#111827', 0, -0.55, 0);
+  const edge = box(baseW + 1.2, 0.3, baseD + 1.2, '#1a2030', 0, -0.55, 0);
   edge.castShadow = false;
   scene.add(edge);
 
   // jalur koridor (garis halus)
   for (let c = 0; c < 2; c += 1) {
     const x = (c - 0.5) * PITCH_X;
-    const lane = box(0.12, 0.02, baseD - 2, '#2a3550', x, -0.09, 0);
+    const lane = box(0.12, 0.02, baseD - 2, '#3a4458', x, -0.09, 0);
     lane.castShadow = false;
     scene.add(lane);
   }

@@ -21,9 +21,9 @@ export function createStage(canvas) {
   const scene = new THREE.Scene();
   const camera = new THREE.OrthographicCamera(-10, 10, 10, -10, -50, 400);
 
-  // ---------- cahaya (dark theme palette) ----------
-  scene.add(new THREE.HemisphereLight('#c8d8f8', '#1a2035', 1.4));
-  const sun = new THREE.DirectionalLight('#ddeeff', 1.8);
+  // ---------- cahaya (modern bright office) ----------
+  scene.add(new THREE.HemisphereLight('#ffffff', '#cfd6e2', 1.6));
+  const sun = new THREE.DirectionalLight('#fff3d6', 2.4);
   sun.position.set(14, 46, 30);
   sun.castShadow = true;
   sun.shadow.mapSize.set(small ? 1024 : 2048, small ? 1024 : 2048);
@@ -32,6 +32,10 @@ export function createStage(canvas) {
   sun.shadow.bias = -0.0006;
   sun.shadow.normalBias = 0.03;
   scene.add(sun);
+  // fill lembut dari arah berlawanan agar tidak ada area yang terlalu gelap
+  const fill = new THREE.DirectionalLight('#cfe0ff', 0.55);
+  fill.position.set(-18, 22, -28);
+  scene.add(fill);
 
   // ---------- kantor ----------
   const office = buildOffice(scene);

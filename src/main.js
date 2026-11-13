@@ -40,6 +40,7 @@ for (const c of chipDefs) {
   chipsEl.appendChild(b);
 }
 
+// Menandai chip divisi yang sedang aktif dan menggesernya ke tengah tampilan.
 function markChip(id) {
   for (const b of chipsEl.children) b.setAttribute('aria-pressed', String(b.dataset.id === id));
   const active = chipsEl.querySelector(`[aria-pressed="true"]`);

@@ -71,38 +71,41 @@ export function createCharacter(agent, divisionColor, index = 0) {
   const hairColor = look.hair || '#1c1c1c';
   const leader = agent.leader;
 
-  const shirt = leader ? '#1e2d4a' : shade(divisionColor, [-0.06, 0.0, 0.08, -0.12][index % 4]);
-  const pants = PANTS[(agent.name.length + index) % PANTS.length];
+  // Pakaian modern: leader = setelan jas, anggota = hoodie/sweater + celana panjang.
+  const shirt = leader ? '#1b2a44' : shade(divisionColor, [-0.04, 0.02, 0.14, -0.1][index % 4]);
+  const pants = leader ? '#1a2333' : shade(divisionColor, [-0.12, -0.04, 0.0, -0.22][index % 4]);
 
   const root = new THREE.Group();
   root.name = agent.id;
   const hips = new THREE.Group();
   root.add(hips);
 
-  // torso
-  hips.add(box(0.52, 0.6, 0.3, shirt, 0, 0.3, 0));
+  // torso ramping (lebih sempit & tinggi)
+  hips.add(box(0.44, 0.62, 0.26, shirt, 0, 0.31, 0));
   if (leader) {
-    hips.add(box(0.14, 0.34, 0.02, '#f5f5f5', 0, 0.38, 0.16));
-    hips.add(box(0.07, 0.3, 0.02, divisionColor, 0, 0.36, 0.17));
+    hips.add(box(0.12, 0.3, 0.02, '#eef2ff', 0, 0.39, 0.15));
+    hips.add(box(0.06, 0.26, 0.02, divisionColor, 0, 0.37, 0.16));
   } else {
-    hips.add(box(0.05, 0.3, 0.02, '#f4f4f4', 0.1, 0.36, 0.16));
-    hips.add(box(0.12, 0.14, 0.02, '#ffffff', 0.1, 0.2, 0.16));
+    // hood/kanguru (sweater modern)
+    hips.add(box(0.46, 0.14, 0.26, shirt, 0, 0.62, -0.02));
+    hips.add(box(0.16, 0.12, 0.2, shirt, 0.14, 0.66, 0.06));
+    hips.add(box(0.16, 0.12, 0.2, shirt, -0.14, 0.66, 0.06));
   }
 
   // head
   const head = new THREE.Group();
-  head.position.set(0, 0.6, 0);
+  head.position.set(0, 0.62, 0);
   hips.add(head);
-  head.add(box(0.46, 0.46, 0.46, skin, 0, 0.25, 0));
-  head.add(box(0.1, 0.1, 0.1, skin, 0, 0.02, 0));
-  head.add(box(0.07, 0.08, 0.02, '#1b1b1b', 0.11, 0.28, 0.235));
-  head.add(box(0.07, 0.08, 0.02, '#1b1b1b', -0.11, 0.28, 0.235));
-  head.add(box(0.1, 0.03, 0.02, '#8a4545', 0, 0.12, 0.235));
+  head.add(box(0.4, 0.4, 0.4, skin, 0, 0.22, 0));
+  head.add(box(0.09, 0.09, 0.09, skin, 0, 0.03, 0));
+  head.add(box(0.06, 0.07, 0.02, '#1b1b1b', 0.09, 0.26, 0.215));
+  head.add(box(0.06, 0.07, 0.02, '#1b1b1b', -0.09, 0.26, 0.215));
+  head.add(box(0.09, 0.025, 0.02, '#8a4545', 0, 0.13, 0.215));
   if (look.glasses) {
     const lens = mat('#9ec5ff', { transparent: true, opacity: 0.35 });
-    head.add(box(0.16, 0.13, 0.02, lens, 0.11, 0.28, 0.245));
-    head.add(box(0.16, 0.13, 0.02, lens, -0.11, 0.28, 0.245));
-    head.add(box(0.4, 0.02, 0.02, '#202020', 0, 0.3, 0.255));
+    head.add(box(0.14, 0.11, 0.02, lens, 0.09, 0.26, 0.225));
+    head.add(box(0.14, 0.11, 0.02, lens, -0.09, 0.26, 0.225));
+    head.add(box(0.36, 0.02, 0.02, '#202020', 0, 0.31, 0.235));
   }
   if (look.hijab) buildHijab(head, look.hijab);
   else buildHair(head, look, hairColor);
@@ -111,12 +114,12 @@ export function createCharacter(agent, divisionColor, index = 0) {
   const legs = [];
   for (const side of [1, -1]) {
     const thigh = new THREE.Group();
-    thigh.position.set(side * 0.13, 0, 0);
-    thigh.add(box(0.2, 0.4, 0.2, pants, 0, -0.2, 0));
+    thigh.position.set(side * 0.11, 0, 0);
+    thigh.add(box(0.17, 0.38, 0.17, pants, 0, -0.19, 0));
     const knee = new THREE.Group();
-    knee.position.set(0, -0.4, 0);
-    knee.add(box(0.2, 0.4, 0.2, pants, 0, -0.2, 0));
-    knee.add(box(0.22, 0.08, 0.3, '#1f1f24', 0, -0.42, 0.05));
+    knee.position.set(0, -0.38, 0);
+    knee.add(box(0.17, 0.38, 0.17, pants, 0, -0.19, 0));
+    knee.add(box(0.19, 0.07, 0.26, '#1f1f24', 0, -0.4, 0.04));
     thigh.add(knee);
     hips.add(thigh);
     legs.push({ thigh, knee });
@@ -126,9 +129,9 @@ export function createCharacter(agent, divisionColor, index = 0) {
   const arms = [];
   for (const side of [1, -1]) {
     const pivot = new THREE.Group();
-    pivot.position.set(side * 0.35, 0.53, 0);
-    pivot.add(box(0.17, 0.34, 0.17, shirt, 0, -0.17, 0));
-    pivot.add(box(0.14, 0.14, 0.14, skin, 0, -0.41, 0));
+    pivot.position.set(side * 0.3, 0.5, 0);
+    pivot.add(box(0.14, 0.3, 0.14, shirt, 0, -0.15, 0));
+    pivot.add(box(0.12, 0.12, 0.12, skin, 0, -0.37, 0));
     hips.add(pivot);
     arms.push(pivot);
   }
