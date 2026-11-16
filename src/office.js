@@ -10,6 +10,12 @@ export const PITCH_Z = 10.5;
 export const WALL_H = 3.6;
 const FLOOR_TOP = 0.1;
 
+// ── Lantai 2 (two-story office) ──
+const SLAB_T = 0.2;                 // ketebalan slab lantai 2
+export const LEVEL2_BASE = WALL_H + SLAB_T; // offset Y grup ruang lantai 2 (3.8)
+export const SECOND_FLOOR = new Set(['account', 'finance']); // divisi yang naik ke lantai 2
+const SLAB_X0 = -18, SLAB_X1 = 7.5, SLAB_Z0 = 6.2, SLAB_Z1 = 14.8; // footprint slab lantai 2
+
 function tint(hex, amount) {
   const c = new THREE.Color(hex);
   c.offsetHSL(0, 0, amount);
@@ -47,6 +53,52 @@ function place(parent, obj, x, y, z, ry = 0) {
   obj.rotation.y = ry;
   parent.add(obj);
   return obj;
+}
+
+function buildSlab() {
+  // Lantai beton tipis yang menopang lantai 2 — diletakkan di atas dinding lantai 1.
+  const slab = box(SLAB_X1 - SLAB_X0, SLAB_T, SLAB_Z1 - SLAB_Z0, '#c9c3ba', 0, WALL_H + SLAB_T / 2, 0);
+  slab.castShadow = false;
+  return slab;
+}
+
+function buildParapet() {
+  const g = new THREE.Group();
+  const h = 1.05;
+  const t = 0.14;
+  // sisi depan (menghadap -z, ke arah kamera)
+  g.add(box(SLAB_X1 - SLAB_X0, h, t, '#e6e0d8', 0, WALL_H + SLAB_T + h / 2, SLAB_Z0 - t / 2));
+  // sisi kanan
+  g.add(box(t, h, SLAB_Z1 - SLAB_Z0, '#e6e0d8', SLAB_X1 - t / 2, WALL_H + SLAB_T + h / 2, 0));
+  // sisi belakang (sejajar dinding belakang kantor)
+  g.add(box(SLAB_X1 - SLAB_X0, h, t, '#e6e0d8', 0, WALL_H + SLAB_T + h / 2, SLAB_Z1 + t / 2));
+  return g;
+}
+
+function buildStairs() {
+  // Tangga beton terbuka: 8 langkah, naik dari halaman depan ke lantai 2.
+  const g = new THREE.Group();
+  const steps = 8;
+  const rise = LEVEL2_BASE / steps;          // ketinggian per langkah
+  const run = 0.55;                          // kedalaman per langkah
+  const width = 1.4;
+  const x0 = 6.6;                            // celah koridor di antara finance & pantry
+  const zTop = SLAB_Z0 - 0.15;               // langkah terakhir mendekati parapet
+  for (let i = 0; i < steps; i += 1) {
+    const y = FLOOR_TOP + rise * (i + 0.5);
+    const z = zTop - run * (steps - 1 - i) - run / 2;
+    const tread = box(width, rise, run, '#d8d2c8', x0, y, z);
+    tread.castShadow = true;
+    tread.receiveShadow = true;
+    g.add(tread);
+  }
+  // rangka samping tipis
+  for (const sx of [-1, 1]) {
+    const rail = box(0.06, LEVEL2_BASE, 0.06, '#9a938a', x0 + sx * (width / 2 + 0.03), LEVEL2_BASE / 2 + FLOOR_TOP, zTop - run * steps + 0.03);
+    rail.castShadow = true;
+    g.add(rail);
+  }
+  return g;
 }
 
 function buildShell(inner, color, title) {
@@ -106,6 +158,11 @@ function buildDivisionRoom(div, scene, chars) {
   const inner = new THREE.Group();
   inner.position.y = FLOOR_TOP;
   room.add(inner);
+
+  // Divisi yang dinaikkan ke lantai 2 — grup `inner` diangkat ke atas slab.
+  if (SECOND_FLOOR.has(div.id)) {
+    inner.position.y = LEVEL2_BASE;
+  }
 
   buildShell(inner, div.color, div.name);
   { const rug = F.rug(5.2, 3.2, tint(div.color, 0.5)); rug.position.set(0, 0.0, 1.0); inner.add(rug); }
@@ -231,11 +288,16 @@ export function buildOffice(scene) {
   DIVISIONS.forEach((d) => rooms.set(d.id, buildDivisionRoom(d, scene, chars)));
   buildLounge(scene);
 
+  // ── Lantai 2: slab + pengaman + tangga ──
+  scene.add(buildSlab());
+  scene.add(buildParapet());
+  scene.add(buildStairs());
+
   const bounds = {
-    minX: -(PITCH_X + ROOM_W / 2),
-    maxX: PITCH_X + ROOM_W / 2,
+    minX: Math.min(-(PITCH_X + ROOM_W / 2), SLAB_X0),
+    maxX: Math.max(PITCH_X + ROOM_W / 2, SLAB_X1, 7.0 + 1.4 / 2),
     minZ: -(PITCH_Z + ROOM_D / 2),
-    maxZ: PITCH_Z + ROOM_D / 2,
+    maxZ: Math.max(PITCH_Z + ROOM_D / 2, SLAB_Z1),
   };
 
   const byId = new Map(chars.map((c) => [c.agent.id, c]));
