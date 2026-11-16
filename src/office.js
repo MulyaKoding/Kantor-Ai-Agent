@@ -156,6 +156,7 @@ function addSeat(inner, chars, agent, x, z, opts) {
   if (agent.leader) deskGroup.add(box(0.5, 0.1, 0.04, color, -deskW / 2 + 0.55, 0.96, deskD / 2 - 0.12));
   const ch = createCharacter(agent, color, index);
   ch.setHome(x, 0, z);
+  ch.root.scale.setScalar(1.22); // perbesar karakter agar terlihat lebih nyata
   inner.add(ch.root);
   chars.push(ch);
   return { ch, deskGroup };
