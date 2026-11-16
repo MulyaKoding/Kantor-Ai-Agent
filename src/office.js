@@ -1,52 +1,45 @@
 import * as THREE from 'three';
 import { AGENTS, DIVISIONS, agentsOf } from '../shared/roster.js';
 import { box, mat, createCharacter } from './character.js';
-import * as F from './furniture.js';
 
-export const ROOM_W = 10;
-export const ROOM_D = 8;
-export const PITCH_X = 12.5;
-export const PITCH_Z = 10.5;
-export const WALL_H = 3.6;
-const FLOOR_TOP = 0.1;
+// ── Ekspor kompatibilitas (dipakai stage.js / main.js) ──
+export const ROOM_W  = 10;
+export const ROOM_D  = 10;
+export const PITCH_X = 0;   // tidak dipakai (posisi manual)
+export const PITCH_Z = 0;
+export const WALL_H  = 0;
+export const LEVEL2_BASE = 0;
+export const SECOND_FLOOR = new Set();
 
-// ── Lantai 2 (two-story office) ──
-const SLAB_T = 0.2;                 // ketebalan slab lantai 2
-export const LEVEL2_BASE = WALL_H + SLAB_T; // offset Y grup ruang lantai 2 (3.8)
-export const SECOND_FLOOR = new Set(['account', 'finance']); // divisi yang naik ke lantai 2
-const SLAB_X0 = -18, SLAB_X1 = 7.5, SLAB_Z0 = 6.2, SLAB_Z1 = 14.8; // footprint slab lantai 2
+// ── Palet neon per divisi ──
+const NEON = {
+  proposal: { edge: '#00ff88', glow: '#00ff44', tile: '#062918' },
+  ads:      { edge: '#ff0088', glow: '#ff44aa', tile: '#1a0012' },
+  social:   { edge: '#ff6600', glow: '#ff8833', tile: '#1a0a00' },
+  qa:       { edge: '#00ffff', glow: '#44ffff', tile: '#001a1a' },
+  dev:      { edge: '#8844ff', glow: '#aa66ff', tile: '#0d001a' },
+  reporting:{ edge: '#00ccff', glow: '#44ddff', tile: '#00101a' },
+  account:  { edge: '#ffee00', glow: '#ffdd33', tile: '#1a1500' },
+  finance:  { edge: '#ff4488', glow: '#ff66aa', tile: '#1a0010' },
+};
 
-function tint(hex, amount) {
-  const c = new THREE.Color(hex);
-  c.offsetHSL(0, 0, amount);
-  return `#${c.getHexString()}`;
-}
+// ── Posisi tiap island (cx, cz) — scattered seperti referensi ──
+const ISLAND_POS = {
+  proposal:  [-18,  -9],
+  ads:       [  6, -16],
+  social:    [-22,   5],
+  qa:        [  2,  -4],
+  dev:       [ 18,   4],
+  reporting: [-10,  14],
+  account:   [  6,  18],
+  finance:   [-32,  18],
+};
 
-function makeSign(text, color) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 1024;
-  canvas.height = 192;
-  const ctx = canvas.getContext('2d');
-  // background gelap dengan warna aksen tipis
-  ctx.fillStyle = '#111827';
-  ctx.fillRect(0, 0, 1024, 192);
-  // garis accent di bawah
-  ctx.fillStyle = color;
-  ctx.fillRect(0, 162, 1024, 30);
-  // subtle overlay
-  ctx.fillStyle = 'rgba(255,255,255,0.04)';
-  ctx.fillRect(0, 0, 1024, 162);
-  // teks
-  ctx.fillStyle = '#ffffff';
-  ctx.font = '800 88px system-ui, -apple-system, "Segoe UI", sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(text.toUpperCase(), 512, 80);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
-  return new THREE.Mesh(new THREE.PlaneGeometry(4.6, 0.86), new THREE.MeshBasicMaterial({ map: tex }));
-}
+// ── Ukuran island ──
+const ISLE_W = 10;   // lebar platform
+const ISLE_D = 10;   // kedalaman platform
+const ISLE_T = 0.4;  // ketebalan platform
+const FLOOR_Y = 0.0; // Y dasar agents di atas platform
 
 function place(parent, obj, x, y, z, ry = 0) {
   obj.position.set(x, y, z);
@@ -55,249 +48,274 @@ function place(parent, obj, x, y, z, ry = 0) {
   return obj;
 }
 
-function buildSlab() {
-  // Lantai beton tipis yang menopang lantai 2 — diletakkan di atas dinding lantai 1.
-  const slab = box(SLAB_X1 - SLAB_X0, SLAB_T, SLAB_Z1 - SLAB_Z0, '#c9c3ba', 0, WALL_H + SLAB_T / 2, 0);
-  slab.castShadow = false;
-  return slab;
-}
-
-function buildParapet() {
+// ── Neon edge strip (garis tepi bercahaya) ──
+function neonEdge(w, d, color) {
   const g = new THREE.Group();
-  const h = 1.05;
   const t = 0.14;
-  // sisi depan (menghadap -z, ke arah kamera)
-  g.add(box(SLAB_X1 - SLAB_X0, h, t, '#e6e0d8', 0, WALL_H + SLAB_T + h / 2, SLAB_Z0 - t / 2));
-  // sisi kanan
-  g.add(box(t, h, SLAB_Z1 - SLAB_Z0, '#e6e0d8', SLAB_X1 - t / 2, WALL_H + SLAB_T + h / 2, 0));
-  // sisi belakang (sejajar dinding belakang kantor)
-  g.add(box(SLAB_X1 - SLAB_X0, h, t, '#e6e0d8', 0, WALL_H + SLAB_T + h / 2, SLAB_Z1 + t / 2));
+  const h = 0.18;
+  const y = ISLE_T / 2 + h / 2;
+  const em = new THREE.MeshBasicMaterial({ color });
+  // Depan
+  g.add(new THREE.Mesh(new THREE.BoxGeometry(w + t, h, t), em));
+  g.children.at(-1).position.set(0, y, -d / 2);
+  // Belakang
+  g.add(new THREE.Mesh(new THREE.BoxGeometry(w + t, h, t), em));
+  g.children.at(-1).position.set(0, y, d / 2);
+  // Kiri
+  g.add(new THREE.Mesh(new THREE.BoxGeometry(t, h, d), em));
+  g.children.at(-1).position.set(-w / 2, y, 0);
+  // Kanan
+  g.add(new THREE.Mesh(new THREE.BoxGeometry(t, h, d), em));
+  g.children.at(-1).position.set(w / 2, y, 0);
   return g;
 }
 
-function buildStairs() {
-  // Tangga beton terbuka: 8 langkah, naik dari halaman depan ke lantai 2.
+// ── Tile lantai (grid gelap dengan aksen neon tipis) ──
+function buildFloorTiles(w, d, tileColor, edgeColor) {
   const g = new THREE.Group();
-  const steps = 8;
-  const rise = LEVEL2_BASE / steps;          // ketinggian per langkah
-  const run = 0.55;                          // kedalaman per langkah
-  const width = 1.4;
-  const x0 = 6.6;                            // celah koridor di antara finance & pantry
-  const zTop = SLAB_Z0 - 0.15;               // langkah terakhir mendekati parapet
-  for (let i = 0; i < steps; i += 1) {
-    const y = FLOOR_TOP + rise * (i + 0.5);
-    const z = zTop - run * (steps - 1 - i) - run / 2;
-    const tread = box(width, rise, run, '#d8d2c8', x0, y, z);
-    tread.castShadow = true;
-    tread.receiveShadow = true;
-    g.add(tread);
-  }
-  // rangka samping tipis
-  for (const sx of [-1, 1]) {
-    const rail = box(0.06, LEVEL2_BASE, 0.06, '#9a938a', x0 + sx * (width / 2 + 0.03), LEVEL2_BASE / 2 + FLOOR_TOP, zTop - run * steps + 0.03);
-    rail.castShadow = true;
-    g.add(rail);
+  const cols = 5; const rows = 5;
+  const tw = w / cols; const td = d / rows;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const tileMat = new THREE.MeshLambertMaterial({ color: tileColor });
+      const tile = new THREE.Mesh(new THREE.BoxGeometry(tw - 0.06, 0.04, td - 0.06), tileMat);
+      tile.position.set(-w / 2 + tw * (c + 0.5), ISLE_T / 2 + 0.02, -d / 2 + td * (r + 0.5));
+      tile.receiveShadow = true;
+      g.add(tile);
+    }
   }
   return g;
 }
 
-function buildShell(inner, color, title) {
-  // Dinding putih terang + trim krem — ruang terasa lebih modern & bersih.
-  const wall = '#eef1f5';
-  const trim = '#d6dae3';
-  const floor = '#d9c9b3';
-
-  inner.add(box(ROOM_W, 0.2, ROOM_D, floor, 0, -FLOOR_TOP, 0));
-
-  // dinding belakang & kiri
-  inner.add(box(ROOM_W + 0.3, WALL_H, 0.3, wall, 0, WALL_H / 2, -ROOM_D / 2 - 0.15));
-  inner.add(box(0.3, WALL_H, ROOM_D + 0.3, wall, -ROOM_W / 2 - 0.15, WALL_H / 2, 0));
-  inner.add(box(ROOM_W + 0.3, 0.14, 0.34, trim, 0, WALL_H + 0.07, -ROOM_D / 2 - 0.15));
-  inner.add(box(0.34, 0.14, ROOM_D + 0.3, trim, -ROOM_W / 2 - 0.15, WALL_H + 0.07, 0));
-  inner.add(box(ROOM_W, 0.22, 0.05, trim, 0, 0.11, -ROOM_D / 2 + 0.03));
-  inner.add(box(0.05, 0.22, ROOM_D, trim, -ROOM_W / 2 + 0.03, 0.11, 0));
-
-  // dinding rendah depan (ada pintu) & kanan
-  const seg = ROOM_W / 2 - 1;
-  inner.add(box(seg, 0.5, 0.2, wall, -(1 + seg / 2), 0.25, ROOM_D / 2 + 0.1));
-  inner.add(box(seg, 0.5, 0.2, wall, 1 + seg / 2, 0.25, ROOM_D / 2 + 0.1));
-  inner.add(box(0.2, 0.5, ROOM_D + 0.2, wall, ROOM_W / 2 + 0.1, 0.25, 0.1));
-  inner.add(box(2.0, 0.04, 0.9, '#1a2035', 0, 0.02, ROOM_D / 2 + 0.1));
-
-  // papan nama divisi (panel aksen warna divisi)
-  inner.add(box(4.8, 1.0, 0.08, color, 0, 3.0, -ROOM_D / 2 + 0.04));
-  place(inner, makeSign(title, '#ffffff'), 0, 3.0, -ROOM_D / 2 + 0.1);
-
-  // jendela di dinding kiri
-  place(inner, F.windowPane(1.6, 1.3), -ROOM_W / 2 + 0.03, 2.0, -1.4, Math.PI / 2);
-  place(inner, F.windowPane(1.6, 1.3), -ROOM_W / 2 + 0.03, 2.0, 1.8, Math.PI / 2);
+// ── Aura glow di bawah platform (sphere transparan) ──
+function buildAura(color) {
+  const geo = new THREE.SphereGeometry(7.5, 24, 12);
+  const mat = new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity: 0.07,
+    side: THREE.FrontSide,
+    depthWrite: false,
+  });
+  const m = new THREE.Mesh(geo, mat);
+  m.position.y = -1.5;
+  m.scale.y = 0.35;
+  return m;
 }
 
-function addSeat(inner, chars, agent, x, z, opts) {
-  const { deskW, deskD, color, index, laptopColor } = opts;
-  const chairColor = tint(color, -0.18);
-  place(inner, F.chair(chairColor), x, 0, z);
-  const deskGroup = place(inner, F.desk(deskW, deskD), x, 0, z + deskD / 2 + 0.35);
-  place(deskGroup, F.laptop(laptopColor), 0, 0, -0.2);
-  place(deskGroup, F.mug(['#ffffff', '#ffd68a', '#cde8ff', '#f7c6d9'][index % 4]), deskW / 2 - 0.4, 0, 0.1);
-  if (agent.leader) {
-    deskGroup.add(box(0.5, 0.1, 0.04, color, -deskW / 2 + 0.55, 0.96, deskD / 2 - 0.12));
-  }
-  const ch = createCharacter(agent, color, index);
-  ch.setHome(x, 0, z);
-  inner.add(ch.root);
-  chars.push(ch);
-  return { ch, deskGroup };
+// ── Label floating di atas island ──
+function makeIsleLabel(divName, agentCount, edgeColor) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512; canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  // background gelap transparan
+  ctx.fillStyle = '#050e1aee';
+  const r = 16;
+  ctx.beginPath();
+  ctx.moveTo(r, 0); ctx.lineTo(512 - r, 0);
+  ctx.quadraticCurveTo(512, 0, 512, r);
+  ctx.lineTo(512, 128 - r);
+  ctx.quadraticCurveTo(512, 128, 512 - r, 128);
+  ctx.lineTo(r, 128);
+  ctx.quadraticCurveTo(0, 128, 0, 128 - r);
+  ctx.lineTo(0, r);
+  ctx.quadraticCurveTo(0, 0, r, 0);
+  ctx.closePath();
+  ctx.fill();
+  // border neon
+  ctx.strokeStyle = edgeColor;
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  // nama divisi
+  ctx.fillStyle = edgeColor;
+  ctx.font = '700 46px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(divName, 20, 44);
+  // jumlah agen
+  ctx.fillStyle = '#aabbcc';
+  ctx.font = '400 32px system-ui, sans-serif';
+  ctx.fillText(`${agentCount} agents`, 20, 90);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(5.0, 1.25),
+    new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false })
+  );
+  return mesh;
 }
 
-function buildDivisionRoom(div, scene, chars) {
-  const room = new THREE.Group();
-  const cx = (div.col - 1) * PITCH_X;
-  const cz = (div.row - 1) * PITCH_Z;
-  room.position.set(cx, 0, cz);
-  const inner = new THREE.Group();
-  inner.position.y = FLOOR_TOP;
-  room.add(inner);
+// ── Pedestral agen (blue glowing base) ──
+function buildPedestal(neonColor) {
+  const g = new THREE.Group();
+  g.add(box(0.7, 0.18, 0.7, '#0a1a2a', 0, 0.09, 0));
+  // glow top face
+  const glow = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.58, 0.58),
+    new THREE.MeshBasicMaterial({ color: neonColor })
+  );
+  glow.rotation.x = -Math.PI / 2;
+  glow.position.y = 0.19;
+  g.add(glow);
+  return g;
+}
 
-  // Divisi yang dinaikkan ke lantai 2 — grup `inner` diangkat ke atas slab.
-  if (SECOND_FLOOR.has(div.id)) {
-    inner.position.y = LEVEL2_BASE;
+// ── Koneksi garis putus-putus antar island ──
+function buildConnection(scene, fromPos, toPos) {
+  const dir = new THREE.Vector3().subVectors(toPos, fromPos);
+  const len = dir.length();
+  if (len < 1) return;
+  const segments = Math.floor(len / 1.6);
+  for (let i = 0; i < segments; i++) {
+    if (i % 2 === 0) continue;  // setiap selang → putus-putus
+    const t0 = i / segments;
+    const t1 = (i + 0.6) / segments;
+    const p0 = fromPos.clone().lerp(toPos, t0);
+    const p1 = fromPos.clone().lerp(toPos, t1);
+    const mid = p0.clone().lerp(p1, 0.5);
+    const segLen = p0.distanceTo(p1);
+    const dash = box(0.08, 0.08, segLen, '#3a6a9a', mid.x, -0.2, mid.z);
+    dash.lookAt(new THREE.Vector3(p1.x, -0.2, p1.z));
+    dash.castShadow = false;
+    scene.add(dash);
   }
+  // titik di ujung
+  for (const p of [fromPos, toPos]) {
+    const dot = new THREE.Mesh(
+      new THREE.SphereGeometry(0.18, 8, 6),
+      new THREE.MeshBasicMaterial({ color: '#4488cc' })
+    );
+    dot.position.set(p.x, -0.15, p.z);
+    scene.add(dot);
+  }
+}
 
-  buildShell(inner, div.color, div.name);
-  { const rug = F.rug(5.2, 3.2, tint(div.color, 0.5)); rug.position.set(0, 0.0, 1.0); inner.add(rug); }
+// ── Island satu divisi ──
+function buildIsland(div, scene, chars) {
+  const [cx, cz] = ISLAND_POS[div.id] ?? [0, 0];
+  const neon = NEON[div.id] ?? { edge: '#ffffff', glow: '#aaaaff', tile: '#0a0a1a' };
 
+  const group = new THREE.Group();
+  group.position.set(cx, 0, cz);
+
+  // Platform datar (body utama)
+  const platform = box(ISLE_W, ISLE_T, ISLE_D, '#060e18', 0, 0, 0);
+  platform.receiveShadow = true;
+  group.add(platform);
+
+  // Floor tiles di atas platform
+  group.add(buildFloorTiles(ISLE_W, ISLE_D, neon.tile, neon.edge));
+
+  // Neon edge
+  group.add(neonEdge(ISLE_W, ISLE_D, neon.edge));
+
+  // Aura bawah
+  group.add(buildAura(neon.glow));
+
+  // Label floating
   const members = agentsOf(div.id);
+  const label = makeIsleLabel(div.short || div.name, members.length, neon.edge);
+  label.position.set(0, ISLE_T / 2 + 2.4, -ISLE_D / 2 - 0.1);
+  group.add(label);
+
+  // Susun agen di platform
   const leader = members.find((m) => m.leader);
   const team = members.filter((m) => !m.leader);
-  const glowColors = { proposal: '#cfe0ff', ads: '#ffd9bd', social: '#ffd0e6', qa: '#c9f2dc', dev: '#1f2a44', reporting: '#c8f3ee', account: '#fff0c4', finance: '#d9e2f2' };
-  const lc = glowColors[div.id] || '#8ec5ff';
+  const all = leader ? [leader, ...team] : members;
 
-  if (leader) {
-    // tim 4 orang: leader di belakang, 3 anggota satu baris
-    const L = addSeat(inner, chars, leader, 0, -3.0, { deskW: 2.6, deskD: 1.3, color: div.color, index: 0, laptopColor: lc });
-    L.ch.roams = true;
-    L.ch.roamPath = [[1.75, -3.0], [1.75, 3.0]];
-    team.forEach((m, i) => {
-      addSeat(inner, chars, m, [-3.4, 0, 3.4][i], 0.3, { deskW: 2.2, deskD: 1.2, color: div.color, index: i + 1, laptopColor: lc });
-    });
-    place(inner, F.clock(), 0, 2.3, -ROOM_D / 2 + 0.05);
-    place(inner, F.plant(1), -4.3, 0, 3.3);
-    place(inner, F.plant(1.15), 4.3, 0, 3.3);
-    place(inner, F.plant(0.9), 4.4, 0, -3.5);
-  } else {
-    const m = members[0];
-    const S = addSeat(inner, chars, m, 0, -2.4, { deskW: 2.6, deskD: 1.3, color: div.color, index: 0, laptopColor: lc });
-    S.ch.roams = true;
-    S.ch.roamPath = [[2.2, -2.4], [2.2, 2.8]];
-    place(inner, F.clock(), 0, 2.3, -ROOM_D / 2 + 0.05);
-    place(inner, F.plant(1), -4.3, 0, 3.3);
-    place(inner, F.plant(1.1), 4.3, 0, 3.3);
-  }
+  const positions = [
+    [0, -2.8],
+    [-2.6, 0.5], [0, 0.5], [2.6, 0.5],
+    [-2.6, 2.8], [0, 2.8],
+  ];
 
-  // properti khas divisi
-  const wallZ = -ROOM_D / 2 + 0.2;
-  switch (div.id) {
-    case 'proposal':
-      place(inner, F.whiteboard(2.6, 1.3), -3.3, 1.75, -ROOM_D / 2 + 0.06);
-      place(inner, F.bookshelf(2.2, 2.1), 3.3, 0, wallZ + 0.1);
-      break;
-    case 'ads':
-      place(inner, F.whiteboard(2.6, 1.3), -3.3, 1.75, -ROOM_D / 2 + 0.06);
-      place(inner, F.bookshelf(2.2, 2.1), 3.3, 0, wallZ + 0.1);
-      place(inner, F.megaphone(), 4.0, 1.4, 3.5, -0.5);
-      break;
-    case 'social':
-      place(inner, F.whiteboard(2.6, 1.3), -3.3, 1.75, -ROOM_D / 2 + 0.06);
-      place(inner, F.ringLight(), -4.2, 0, 2.6, 0.5);
-      place(inner, F.bookshelf(2.2, 2.1), 3.3, 0, wallZ + 0.1);
-      break;
-    case 'qa':
-      place(inner, F.whiteboard(2.6, 1.3), -3.3, 1.75, -ROOM_D / 2 + 0.06);
-      place(inner, F.deviceShelf(), 3.3, 0, wallZ + 0.2);
-      break;
-    case 'dev':
-      place(inner, F.whiteboard(2.6, 1.3), -3.3, 1.75, -ROOM_D / 2 + 0.06);
-      place(inner, F.serverRack(), 3.9, 0, -3.2);
-      break;
-    case 'reporting':
-      place(inner, F.chartWall(3.6, 1.9), -2.8, 1.75, -ROOM_D / 2 + 0.06);
-      place(inner, F.bookshelf(2.2, 2.1), 3.5, 0, wallZ + 0.1);
-      break;
-    case 'account':
-      place(inner, F.sofa(2.6), -3.3, 0, -3.3);
-      place(inner, F.table(1.4, 0.9), -3.3, 0, -1.9);
-      place(inner, F.whiteboard(2.4, 1.2), 3.3, 1.75, -ROOM_D / 2 + 0.06);
-      break;
-    case 'finance':
-      place(inner, F.safe(), 3.8, 0, -3.3);
-      place(inner, F.filingCabinet(), -3.8, 0, -3.5);
-      place(inner, F.filingCabinet(), -3.0, 0, -3.5);
-      place(inner, F.calculator(), 0.9, 0, -0.55);
-      break;
-    default:
-  }
+  all.forEach((agent, i) => {
+    const [ax, az] = positions[i] ?? [0, 0];
+    const inner = new THREE.Group();
+    inner.position.set(ax, ISLE_T / 2, az);
+    // Pedestal bercahaya
+    const ped = buildPedestal(neon.glow);
+    inner.add(ped);
+    // Karakter
+    const ch = createCharacter(agent, div.color, i);
+    ch.setHome(0, 0.18, 0);
+    inner.add(ch.root);
+    chars.push(ch);
+    group.add(inner);
+  });
 
-  scene.add(room);
-  return { id: div.id, center: new THREE.Vector3(cx, 0, cz), group: room };
+  scene.add(group);
+  return { id: div.id, center: new THREE.Vector3(cx, 0, cz), group };
 }
 
-function buildLounge(scene) {
-  const room = new THREE.Group();
-  room.position.set(PITCH_X, 0, PITCH_Z);
-  const inner = new THREE.Group();
-  inner.position.y = FLOOR_TOP;
-  room.add(inner);
-  const color = '#e08e5a';
-  buildShell(inner, color, 'Pantry');
-  { const rug = F.rug(5.5, 3.6, '#efe0cf'); rug.position.set(0, 0, 0.5); inner.add(rug); }
-  place(inner, F.sofa(3.0, '#6b7a99'), 0, 0, -1.6);
-  place(inner, F.table(1.5, 0.9, '#d9b98c'), 0, 0, 0.2);
-  place(inner, F.mug('#ffffff'), -0.3, 0.0, 0.2);
-  place(inner, F.coffeeMachine(), 3.6, 0, -3.4);
-  place(inner, F.waterCooler(), 4.4, 0, -2.3);
-  place(inner, F.bookshelf(2.2, 2.1), -3.3, 0, -ROOM_D / 2 + 0.3);
-  place(inner, F.plant(1.2), -4.3, 0, 3.3);
-  place(inner, F.plant(1), 4.3, 0, 3.3);
-  scene.add(room);
-  return room;
+// ── Lantai luar angkasa (subtle grid) ──
+function buildSpaceFloor(scene) {
+  // Ground plane sangat gelap
+  const floorGeo = new THREE.PlaneGeometry(200, 200, 40, 40);
+  const floorMat = new THREE.MeshLambertMaterial({ color: '#050b14' });
+  const floor = new THREE.Mesh(floorGeo, floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = -0.6;
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  // Grid lines halus
+  const gridHelper = new THREE.GridHelper(180, 36, '#0d2035', '#0d2035');
+  gridHelper.position.y = -0.59;
+  scene.add(gridHelper);
+
+  // Stars / bintang-bintang di "langit" (partikel kecil)
+  const starGeo = new THREE.BufferGeometry();
+  const starCount = 300;
+  const positions = new Float32Array(starCount * 3);
+  for (let i = 0; i < starCount; i++) {
+    positions[i * 3]     = (Math.random() - 0.5) * 180;
+    positions[i * 3 + 1] = Math.random() * 12 + 1;
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 180;
+  }
+  starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const starMat = new THREE.PointsMaterial({ color: '#8ab4d4', size: 0.15, sizeAttenuation: true });
+  scene.add(new THREE.Points(starGeo, starMat));
 }
 
+// ── Main export ──
 export function buildOffice(scene) {
   const chars = [];
   const rooms = new Map();
 
-  // lantai koridor / dasar (modern: abu terang + trim kayu)
-  const baseW = PITCH_X * 2 + ROOM_W + 5;
-  const baseD = PITCH_Z * 2 + ROOM_D + 5;
-  const base = box(baseW, 0.4, baseD, '#2b3340', 0, -0.3, 0);
-  base.castShadow = false;
-  scene.add(base);
-  const edge = box(baseW + 1.2, 0.3, baseD + 1.2, '#1a2030', 0, -0.55, 0);
-  edge.castShadow = false;
-  scene.add(edge);
+  buildSpaceFloor(scene);
 
-  // jalur koridor (garis halus)
-  for (let c = 0; c < 2; c += 1) {
-    const x = (c - 0.5) * PITCH_X;
-    const lane = box(0.12, 0.02, baseD - 2, '#3a4458', x, -0.09, 0);
-    lane.castShadow = false;
-    scene.add(lane);
+  // Buat semua island
+  DIVISIONS.forEach((d) => {
+    const island = buildIsland(d, scene, chars);
+    rooms.set(d.id, island);
+  });
+
+  // Koneksi antar island (pola bintang/web)
+  const connections = [
+    ['proposal', 'ads'],
+    ['proposal', 'social'],
+    ['ads', 'qa'],
+    ['social', 'dev'],
+    ['qa', 'reporting'],
+    ['dev', 'account'],
+    ['reporting', 'finance'],
+    ['account', 'finance'],
+    ['qa', 'dev'],
+    ['proposal', 'qa'],
+  ];
+  for (const [a, b] of connections) {
+    const posA = rooms.get(a)?.center;
+    const posB = rooms.get(b)?.center;
+    if (posA && posB) buildConnection(scene, posA, posB);
   }
 
-  DIVISIONS.forEach((d) => rooms.set(d.id, buildDivisionRoom(d, scene, chars)));
-  buildLounge(scene);
-
-  // ── Lantai 2: slab + pengaman + tangga ──
-  scene.add(buildSlab());
-  scene.add(buildParapet());
-  scene.add(buildStairs());
-
+  const allPos = [...rooms.values()].map((r) => r.center);
   const bounds = {
-    minX: Math.min(-(PITCH_X + ROOM_W / 2), SLAB_X0),
-    maxX: Math.max(PITCH_X + ROOM_W / 2, SLAB_X1, 7.0 + 1.4 / 2),
-    minZ: -(PITCH_Z + ROOM_D / 2),
-    maxZ: Math.max(PITCH_Z + ROOM_D / 2, SLAB_Z1),
+    minX: Math.min(...allPos.map((p) => p.x)) - 8,
+    maxX: Math.max(...allPos.map((p) => p.x)) + 8,
+    minZ: Math.min(...allPos.map((p) => p.z)) - 8,
+    maxZ: Math.max(...allPos.map((p) => p.z)) + 8,
   };
 
   const byId = new Map(chars.map((c) => [c.agent.id, c]));

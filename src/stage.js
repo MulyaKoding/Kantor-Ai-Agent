@@ -14,28 +14,50 @@ export function createStage(canvas) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
   const small = Math.min(window.innerWidth, window.innerHeight) < 600;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.setClearColor(0x0d1117, 1);
+  renderer.setClearColor(0x020810, 1);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x020810, 0.012);
   const camera = new THREE.OrthographicCamera(-10, 10, 10, -10, -50, 400);
 
-  // ---------- cahaya (modern bright office) ----------
-  scene.add(new THREE.HemisphereLight('#ffffff', '#cfd6e2', 1.6));
-  const sun = new THREE.DirectionalLight('#fff3d6', 2.4);
-  sun.position.set(14, 46, 30);
+  // ---------- cahaya futuristik dark sci-fi ----------
+  // Ambient sangat gelap
+  scene.add(new THREE.HemisphereLight('#0a1a2a', '#020408', 0.6));
+
+  // Cahaya utama dari atas (sedikit biru-putih)
+  const sun = new THREE.DirectionalLight('#b0d4ff', 1.4);
+  sun.position.set(20, 60, 30);
   sun.castShadow = true;
   sun.shadow.mapSize.set(small ? 1024 : 2048, small ? 1024 : 2048);
   const sc = sun.shadow.camera;
-  sc.left = -40; sc.right = 40; sc.top = 40; sc.bottom = -40; sc.near = 1; sc.far = 140;
-  sun.shadow.bias = -0.0006;
-  sun.shadow.normalBias = 0.03;
+  sc.left = -60; sc.right = 60; sc.top = 60; sc.bottom = -60; sc.near = 1; sc.far = 160;
+  sun.shadow.bias = -0.0005;
+  sun.shadow.normalBias = 0.02;
   scene.add(sun);
-  // fill lembut dari arah berlawanan agar tidak ada area yang terlalu gelap
-  const fill = new THREE.DirectionalLight('#cfe0ff', 0.55);
-  fill.position.set(-18, 22, -28);
+
+  // Fill biru dingin dari bawah
+  const fill = new THREE.DirectionalLight('#0033aa', 0.4);
+  fill.position.set(-20, -10, -30);
   scene.add(fill);
+
+  // Accent neon: titik cahaya warna-warni di tiap island area
+  const neonLights = [
+    { color: '#00ff88', pos: [-18, 4, -9] },
+    { color: '#ff0088', pos: [6,  4, -16] },
+    { color: '#ff6600', pos: [-22, 4, 5]  },
+    { color: '#00ffff', pos: [2,  4, -4]  },
+    { color: '#8844ff', pos: [18, 4, 4]   },
+    { color: '#00ccff', pos: [-10, 4, 14] },
+    { color: '#ffee00', pos: [6,  4, 18]  },
+    { color: '#ff4488', pos: [-32, 4, 18] },
+  ];
+  for (const { color, pos } of neonLights) {
+    const pt = new THREE.PointLight(color, 1.8, 18, 2);
+    pt.position.set(...pos);
+    scene.add(pt);
+  }
 
   // ---------- kantor ----------
   const office = buildOffice(scene);
