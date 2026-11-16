@@ -28,11 +28,11 @@ export function createCharacter(agent, divisionColor, index = 0) {
   const root = new THREE.Group();
   root.name = agent.id;
 
-  const seed  = (index + 1) * 1.7 + agent.name.length * 0.4;
-  const neon  = new THREE.Color(divisionColor);
+  const seed = (index + 1) * 1.7 + agent.name.length * 0.4;
+  const neon = new THREE.Color(divisionColor);
   const white = '#d8eeff';
   const bodyC = '#c8ddf2';
-  const dimC  = '#8aaabb';
+  const dimC = '#8aaabb';
 
   // ── Kaki (dua silinder pendek) ──
   const legGeo = new THREE.CylinderGeometry(0.07, 0.09, 0.32, 10);
@@ -84,7 +84,7 @@ export function createCharacter(agent, divisionColor, index = 0) {
   // Tiga torus rings di body pada ketinggian berbeda
   const rings = [];
   const ringHeights = [0.42, 0.65, 0.90];
-  const ringRadii   = [0.245, 0.235, 0.225];
+  const ringRadii = [0.245, 0.235, 0.225];
   for (let i = 0; i < 3; i++) {
     const rGeo = new THREE.TorusGeometry(ringRadii[i], 0.022, 8, 28);
     const rMat = new THREE.MeshBasicMaterial({
@@ -174,7 +174,7 @@ export function createCharacter(agent, divisionColor, index = 0) {
 
   c.update = (dt, t) => {
     const working = c.status === 'working';
-    const done    = c.status === 'done';
+    const done = c.status === 'done';
 
     // ── Hover / float naik-turun ──
     root.position.y = home.y + Math.sin(t * 1.6 + seed) * 0.07;
@@ -189,7 +189,7 @@ export function createCharacter(agent, divisionColor, index = 0) {
 
     // ── Ring pulse: glow berkedip neon ──
     const pulseSpeed = working ? 4.5 : 1.8;
-    const pulseBase  = working ? 0.55 : 0.75;
+    const pulseBase = working ? 0.55 : 0.75;
     rings.forEach((ring, i) => {
       const p = pulseBase + Math.sin(t * pulseSpeed + seed + i * 0.9) * 0.25;
       ring.material.opacity = Math.max(0.3, Math.min(1, p));
