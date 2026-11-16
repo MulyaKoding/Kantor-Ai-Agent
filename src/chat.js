@@ -33,6 +33,30 @@ export function clearHistory(id) {
 export const getCode = () => safe.get(KEY_CODE) || '';
 export const setCode = (c) => (c ? safe.set(KEY_CODE, c) : safe.del(KEY_CODE));
 
+// Riwayat tugas per agen (task log) — simpan ke localStorage.
+const KEY_LOG = 'kantorai.tasklog.v1';
+let taskLogs = {};
+try { taskLogs = JSON.parse(safe.get(KEY_LOG) || '{}') || {}; } catch { taskLogs = {}; }
+export function getTaskLog(id) { return taskLogs[id] || []; }
+export function addTaskLog(id, entry) {
+  if (!taskLogs[id]) taskLogs[id] = [];
+  taskLogs[id].push(entry);
+  if (taskLogs[id].length > 50) taskLogs[id] = taskLogs[id].slice(-50);
+  safe.set(KEY_LOG, JSON.stringify(taskLogs));
+}
+export function clearTaskLog(id) { delete taskLogs[id]; safe.set(KEY_LOG, JSON.stringify(taskLogs)); }
+
+// Statistik global (counters) — di-reset tiap sesi browser.
+const KEY_STATS = 'kantorai.stats.v1';
+let stats = { agents: 0, tasks: 0, msgs: 0 };
+try { const s = JSON.parse(safe.get(KEY_STATS) || '{}'); if (s && typeof s.tasks === 'number') stats = s; } catch { /* ignore */ }
+export function getStats() { return stats; }
+export function bumpStats(key, by = 1) {
+  stats[key] = (stats[key] || 0) + by;
+  safe.set(KEY_STATS, JSON.stringify(stats));
+  return stats;
+}
+
 export async function fetchConfig() {
   try {
     const r = await fetch('/api/config');

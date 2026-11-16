@@ -140,6 +140,43 @@ button, input, textarea { font: inherit; color: inherit; }
   box-shadow: 0 0 0 1px rgba(79,124,255,.2), var(--shadow-sm);
 }
 
+/* Active chip glow pulse */
+.chip[aria-pressed='true']::before {
+  content: ''; position: absolute; inset: -2px; border-radius: 999px;
+  background: var(--c, var(--accent));
+  opacity: 0.22; z-index: -1;
+  animation: chipGlow 2.4s ease-in-out infinite;
+}
+@keyframes chipGlow {
+  0%, 100% { opacity: .16; transform: scale(1); }
+  50% { opacity: .34; transform: scale(1.06); }
+}
+
+/* ── Stats bar ── */
+#stats {
+  position: fixed; top: 14px; right: 14px; z-index: 5;
+  display: flex; gap: 6px; pointer-events: none;
+}
+#stats > * { pointer-events: auto; }
+.stat {
+  background: var(--card);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--line); border-radius: 12px;
+  padding: 7px 12px 6px;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+  box-shadow: var(--shadow-sm); min-width: 78px;
+}
+.stat-num {
+  font-size: 17px; font-weight: 800; letter-spacing: -0.03em; color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.stat-label {
+  font-size: 9.5px; font-weight: 600; letter-spacing: 0.08em; color: var(--ink-muted);
+}
+.stat-num.up { color: var(--success); }
+
 /* Focus rings */
 .chip:focus-visible, .icon-btn:focus-visible,
 #btn-send:focus-visible, .mate:focus-visible, .q:focus-visible {
@@ -314,6 +351,130 @@ body.chatting #panel { transform: none; opacity: 1; pointer-events: auto; }
   color: var(--ink);
   border-color: var(--line-hover);
 }
+
+/* Card grid (reference UI: badge / task / stats / tags / log) */
+.card-grid {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 12px 14px 8px;
+  background: var(--bg-2); flex-shrink: 0;
+}
+.card {
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: 14px; padding: 11px 13px;
+  box-shadow: var(--shadow-sm);
+}
+.card-badge { display: flex; }
+.badge {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 4px 11px 4px 7px; border-radius: 999px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--line);
+}
+.badge-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--ink-muted);
+  box-shadow: 0 0 6px var(--ink-muted);
+  transition: background .3s, box-shadow .3s;
+}
+.badge-state {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em;
+  color: var(--ink-soft);
+}
+.badge.working .badge-dot {
+  background: #d29922; box-shadow: 0 0 8px #d29922;
+  animation: pulse 1s infinite;
+}
+.badge.working .badge-state { color: #e3b341; }
+.badge.done .badge-dot {
+  background: var(--success); box-shadow: 0 0 8px var(--success);
+}
+.badge.done .badge-state { color: var(--success); }
+.badge.idle .badge-dot { background: var(--ink-muted); box-shadow: none; }
+
+.card-task { }
+.task-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 6px;
+}
+.task-label {
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em;
+  color: var(--ink-muted);
+}
+.task-pct {
+  font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+}
+.task-name {
+  font-size: 13px; font-weight: 600; color: var(--ink);
+  margin-bottom: 8px; min-height: 18px; line-height: 1.3;
+}
+.progress {
+  height: 5px; border-radius: 999px;
+  background: rgba(255,255,255,0.06); overflow: hidden;
+}
+.progress-bar {
+  height: 100%; width: 0%; border-radius: 999px;
+  background: linear-gradient(90deg, #5b8aff, #7db0ff);
+  box-shadow: 0 0 8px rgba(79,124,255,0.6);
+  transition: width .4s cubic-bezier(.16,1,.3,1);
+}
+.progress-bar.glow { box-shadow: 0 0 12px rgba(79,124,255,0.8); }
+
+.card-stats { }
+.stat-row {
+  display: flex; gap: 14px; justify-content: space-around;
+}
+.stat-row > div { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.stat-row-num {
+  font-size: 15px; font-weight: 800; color: var(--ink);
+  font-variant-numeric: tabular-nums; line-height: 1.15;
+}
+.stat-row-label {
+  font-size: 8.5px; font-weight: 600; letter-spacing: 0.07em;
+  color: var(--ink-muted);
+}
+
+.card-tags { }
+.tag-chips {
+  display: flex; flex-wrap: wrap; gap: 5px;
+}
+.tag-chip {
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.03);
+  border-radius: 999px; padding: 4px 10px;
+  font-size: 10.5px; font-weight: 600; color: var(--ink-soft);
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+}
+.tag-chip:hover {
+  background: var(--accent-soft); color: #7da4ff;
+  border-color: rgba(79,124,255,.4); transform: translateY(-1px);
+}
+.tag-chip.on {
+  background: var(--accent-soft); color: #7da4ff;
+  border-color: rgba(79,124,255,.4);
+}
+
+.card-log { padding: 9px 13px; }
+.task-log {
+  display: flex; flex-direction: column; gap: 4px;
+  max-height: 150px; overflow-y: auto;
+  font-family: ui-monospace, 'SF Mono', 'Fira Code', monospace;
+  font-size: 10.5px; line-height: 1.5;
+}
+.task-log:empty::before {
+  content: 'Belum ada riwayat tugas.';
+  color: var(--ink-muted); font-style: italic;
+}
+.task-log .tl-item { display: flex; gap: 8px; align-items: baseline; }
+.task-log .tl-time { color: var(--ink-muted); flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.task-log .tl-arrow { color: var(--ink-muted); flex-shrink: 0; }
+.task-log .tl-text { color: var(--ink-soft); word-break: break-word; }
+.task-log .tl-item.done .tl-arrow { color: var(--success); }
+.task-log .tl-item.done .tl-text { color: var(--ink); }
+.task-log .tl-item.work .tl-arrow { color: #d29922; }
+.task-log .tl-item.work .tl-text { color: #e3b341; }
 
 /* Messages */
 .messages {
